@@ -35,8 +35,8 @@ def obtieneObjetos(id):
 def conectaObjeto(tipo, nombre, ubicacion):
 	carac={}
 	if (tipo==0):
-		carac["temp"]=0
-		carac["ilum"]=0
+		carac["temperatura"]=0
+		carac["luminosidad"]=0
 	if (tipo==1):
 		carac["tipo"]="temp"
 		carac["valor"]=0
