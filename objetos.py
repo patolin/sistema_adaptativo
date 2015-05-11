@@ -11,11 +11,10 @@ numItem=0
 
 tipos={}
 tipos[0]="lugar"
-tipos[1]="sensor_temperatura"
-tipos[2]="sensor_iluminacion"
-tipos[3]="calefactor"
-tipos[4]="bombilla"
-
+tipos[1]="sensor"
+tipos[2]="sensor"
+tipos[3]="actuador"
+tipos[4]="actuador"
 
 def obtieneObjetos(id):
 	global items, numItem
@@ -24,7 +23,11 @@ def obtieneObjetos(id):
 	coleccion = db.objetos
 	datos=coleccion.find({"id_padre":id})
 	for dato in datos:
-		print "["+str(numItem)+"]\tTipo: "+dato["tipo"]+"\tObj.:"+dato["nombre"]
+		strTab=""
+		if (dato["tipo"]=="sensor" or dato["tipo"]=="actuador"):
+			strTab="* "
+		if (dato["tipo"]!="alarma"):
+			print "["+str(numItem)+"]\t"+strTab+"Tipo: "+dato["tipo"]+"\tObj.:"+dato["nombre"]
 		items[numItem]=dato["_id"]
 		numItem += 1
 		obtieneObjetos(dato["_id"])
@@ -32,17 +35,20 @@ def obtieneObjetos(id):
 def conectaObjeto(tipo, nombre, ubicacion):
 	carac={}
 	if (tipo==0):
-		carac["estado"]=1
+		carac["temp"]=0
+		carac["ilum"]=0
 	if (tipo==1):
-		carac["estado"]=1
-		carac["temperatura"]=0
+		carac["tipo"]="temp"
+		carac["valor"]=0
 	if (tipo==2):
-		carac["estado"]=1
-		carac["luminosidad"]=0
+		carac["tipo"]="ilum"
+		carac["valor"]=0
 	if (tipo==3):
-		carac["estado"]=1
+		carac["tipo"]="temp"
+		carac["valor"]=20
 	if (tipo==4):
-		carac["estado"]=1
+		carac["tipo"]="ilum"
+		carac["valor"]=50
 
 	objeto = { 	"tipo":tipos[tipo],
 			"id_padre":items[ubicacion],
@@ -70,8 +76,8 @@ while True:
 	obtieneObjetos(0)
 	print ""
 	print "Acciones disponibles"
-	print "\t1) conectar objeto"
-	print "\t2) desconectar objeto"
+	print "\t1) crear objeto"
+	print "\t2) eliminar objeto"
 	accion = str(input("Seleccione una accion: "))
 	if (accion=="1"):
 		#creamos nuevo objeto
