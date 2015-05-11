@@ -68,9 +68,9 @@ def ajusteValoresAmbiente(id):
 		if (dato["tipo"]=="lugar"):
 			# modificamos la temperatura
 			if (dato["caracteristicas"]["temperatura"]<tempAmbiente):
-				dato["caracteristicas"]["temperatura"] += 1
+				dato["caracteristicas"]["temperatura"] += 0.5
 			if (dato["caracteristicas"]["temperatura"]>tempAmbiente):
-				dato["caracteristicas"]["temperatura"] -= 1
+				dato["caracteristicas"]["temperatura"] -= 0.5
 			# modificamos la luminosidad
 			if (dato["caracteristicas"]["luminosidad"]<lumiAmbiente):
 				dato["caracteristicas"]["luminosidad"] += 1
@@ -86,6 +86,41 @@ def ajusteValoresAmbiente(id):
 
 # ******************************************************************
 
+# unidad AC de enfriamiento:
+# baja la temperatura
+def ejecutaAC(idLugar):
+	client = MongoClient()
+	db=client.db_sua
+	coleccion = db.objetos
+	dato=coleccion.find_one({"_id":idLugar})
+	dato["caracteristicas"]["temperatura"] -= 1
+	coleccion.save(dato)
+
+# unidad de iluminacion
+# sube la iluminacion		
+def ejecutaLuz(idLugar):
+	client = MongoClient()
+	db=client.db_sua
+	coleccion = db.objetos
+	dato=coleccion.find_one({"_id":idLugar})
+	dato["caracteristicas"]["luminosidad"] += 5
+	coleccion.save(dato)
+
+# ejecutor de actuadores 
+def ejecutaActuadores(id):
+	client = MongoClient()
+	db=client.db_sua
+	coleccion = db.objetos
+	datosObjetos=coleccion.find({"id_padre":id})
+	for dato in datosObjetos:
+		if (dato["tipo"]=="actuador"):
+			if (dato["caracteristicas"]["tipo"]=="temp" and dato["caracteristicas"]["activo"]==1): 	# aire acondicionado
+				ejecutaAC(dato["id_padre"])
+			if (dato["caracteristicas"]["tipo"]=="ilum" and dato["caracteristicas"]["activo"]==1): 	# iluminacion
+				ejecutaLuz(dato["id_padre"])
+		ejecutaActuadores(dato["_id"])
+
+# ******************************************************************
 
 				
 def bucle():
@@ -97,6 +132,9 @@ def bucle():
 	listaObjetos(0)
 	# realiza ajuste por temperatura ambiente exterior
 	ajusteValoresAmbiente(0)
+
+	# bucleActuadores
+	ejecutaActuadores(0)
 	
 	
 

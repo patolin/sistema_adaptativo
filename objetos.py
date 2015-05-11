@@ -46,10 +46,12 @@ def conectaObjeto(tipo, nombre, ubicacion):
 	if (tipo==3):
 		carac["tipo"]="temp"
 		carac["valor"]=20
+		carac["activo"]=1
 	if (tipo==4):
 		carac["tipo"]="ilum"
 		carac["valor"]=50
-
+		carac["activo"]=1
+	carac["activo"]=1	
 	objeto = { 	"tipo":tipos[tipo],
 			"id_padre":items[ubicacion],
 			"timestamp":datetime.datetime.utcnow(),
@@ -87,7 +89,7 @@ while True:
 		print "\t0) Ubicacion"
 		print "\t1) Sensor de temperatura"
 		print "\t2) Sensor de iluminacion"
-		print "\t3) Calefactor/AC"
+		print "\t3) AC"
 		print "\t4) Bombilla"
 		tip = int(input("Seleccione un tipo de objeto: "))
 		nom = str(raw_input("Ingrese el nombre del objeto: "))
