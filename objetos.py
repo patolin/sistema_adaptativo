@@ -46,11 +46,11 @@ def conectaObjeto(tipo, nombre, ubicacion):
 	if (tipo==3):
 		carac["tipo"]="temp"
 		carac["valor"]=20
-		carac["activo"]=1
+		carac["activo"]=0
 	if (tipo==4):
 		carac["tipo"]="ilum"
 		carac["valor"]=50
-		carac["activo"]=1
+		carac["activo"]=0
 	carac["activo"]=1	
 	objeto = { 	"tipo":tipos[tipo],
 			"id_padre":items[ubicacion],

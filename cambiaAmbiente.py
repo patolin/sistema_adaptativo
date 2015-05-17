@@ -9,6 +9,6 @@ client = MongoClient()
 db=client.db_sua
 coleccion = db.objetos
 datosAmbiente=coleccion.find_one({"id_padre":0, "tipo":"ambiente"})
-datosAmbiente["caracteristicas"]["temperatura"]=15
+datosAmbiente["caracteristicas"]["temperatura"]=28
 datosAmbiente["caracteristicas"]["luminosidad"]=50
 coleccion.save(datosAmbiente)

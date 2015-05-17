@@ -5,10 +5,21 @@ import datetime
 client = MongoClient()
 
 db=client.db_sua
-coleccion = db.objetos
+
 
 #borramos todos los objetos
+print "Vaciando contenedores de datos"
+
+
+
+coleccion = db.alertas
 coleccion.remove({})
+
+coleccion = db.objetos
+coleccion.remove({})
+
+print "Creando nuevos objetos"
+
 temp_inicial=20
 ilum_inicial=50
 
@@ -50,4 +61,6 @@ objeto = { 	"tipo":"lugar",
 		}
 uidCuarto2 = coleccion.insert(objeto)
 print "Objeto Cuarto 2 creado con UID: "+str(uidCuarto2)
+
+print "Configuramos datos de temperatura y luminosidad iniciales"
 
