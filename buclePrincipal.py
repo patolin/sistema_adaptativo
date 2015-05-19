@@ -106,8 +106,8 @@ def ejecutaLuz(idLugar):
 	dato["caracteristicas"]["luminosidad"] += 5
 	coleccion.save(dato)
 
-# ejecutor de actuadores 
-def ejecutaActuadores(id):
+# ejecutor de simulacion 
+def ejecutaSimulador(id):
 	client = MongoClient()
 	db=client.db_sua
 	coleccion = db.objetos
@@ -118,7 +118,7 @@ def ejecutaActuadores(id):
 				ejecutaAC(dato["id_padre"])
 			if (dato["caracteristicas"]["tipo"]=="ilum" and dato["caracteristicas"]["activo"]==1): 	# iluminacion
 				ejecutaLuz(dato["id_padre"])
-		ejecutaActuadores(dato["_id"])
+		ejecutaSimulador(dato["_id"])
 
 # ******************************************************************
 
@@ -180,7 +180,13 @@ def obtieneLugarSensor(uid):
 	sensor=coleccion.find_one({"_id":uid})
 	return sensor["id_padre"]
 
-
+def obtieneTipoAlerta(uid):
+	client = MongoClient()
+	db=client.db_sua
+	coleccion = db.objetos
+	objeto=coleccion.find_one({"_id":uid})
+	if objeto != None:
+		return objeto["caracteristicas"]["tipo"]
 
 def bucleAnalisis(id):
 	client = MongoClient()
@@ -192,6 +198,12 @@ def bucleAnalisis(id):
 		uidSensor=alerta["id_padre"]
 		uidFuente=alerta["id_alerta"]
 		uidPadre=obtieneLugarSensor(uidSensor)
+		tipAlerta=obtieneTipoAlerta(uidFuente)
+		if (tipAlerta==1): #menor
+			accionEvento="apagar"
+		if (tipAlerta==2): #mayor
+			accionEvento="encender"
+
 		# obtenemos el lugar al que pertenece el sensor
 		# verificamos si tiene una unidad AC
 		coleccionObj = db.objetos
@@ -206,7 +218,7 @@ def bucleAnalisis(id):
 				coleccionAcciones = db.acciones
 				accionNueva={
 								"timestamp":datetime.datetime.utcnow(),
-								"accion": "encender", # encender/apagar
+								"accion": accionEvento, # encender/apagar
 								"actuador": unidadAC["_id"],
 								"atendida": 0
 							}
@@ -220,6 +232,32 @@ def bucleAnalisis(id):
 		alerta["atendida"]=1
 		coleccion = db.alertas
 		coleccion.save(alerta)
+
+
+# bucle de ejecucion
+def cambiaEstadoActuador(id, estado):
+	client = MongoClient()
+	db=client.db_sua
+	coleccion = db.objetos
+	objeto=coleccion.find_one({"_id":id})
+	if objeto != None:
+		print ("Ejecutando accion "+estado+" para el actuador uid: "+str(id))
+		if (estado=="encender"):
+			objeto["caracteristicas"]["activo"]=1
+		if (estado=="apagar"):
+			objeto["caracteristicas"]["activo"]=0	
+		coleccion.save(objeto)
+
+def bucleEjecucion(id):
+	client = MongoClient()
+	db=client.db_sua
+	coleccion = db.acciones
+	accionesPendientes=coleccion.find({"atendida":0})
+	for accion in accionesPendientes:
+		cambiaEstadoActuador(accion["actuador"], accion["accion"])
+		accion["atendida"]=1
+		coleccion.save(accion)
+
 
 
 # bucle principal del programa
@@ -240,8 +278,11 @@ def bucle():
 	# bucle de analisis
 	bucleAnalisis(0)
 
-	# bucleActuadores
-	ejecutaActuadores(0)
+	# bucle de ejecucion
+	bucleEjecucion(0)
+
+	# bucle simulacion
+	ejecutaSimulador(0)
 	
 	
 
