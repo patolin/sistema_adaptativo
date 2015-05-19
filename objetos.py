@@ -40,9 +40,11 @@ def conectaObjeto(tipo, nombre, ubicacion):
 	if (tipo==1):
 		carac["tipo"]="temp"
 		carac["valor"]=0
+		carac["activo"]=1	
 	if (tipo==2):
 		carac["tipo"]="ilum"
 		carac["valor"]=0
+		carac["activo"]=1	
 	if (tipo==3):
 		carac["tipo"]="temp"
 		carac["valor"]=20
@@ -51,7 +53,7 @@ def conectaObjeto(tipo, nombre, ubicacion):
 		carac["tipo"]="ilum"
 		carac["valor"]=50
 		carac["activo"]=0
-	carac["activo"]=1	
+		
 	objeto = { 	"tipo":tipos[tipo],
 			"id_padre":items[ubicacion],
 			"timestamp":datetime.datetime.utcnow(),
@@ -68,6 +70,7 @@ def desconectaObjeto(o_id):
 	db=client.db_sua
 	coleccion = db.objetos
 	coleccion.remove({"_id":o_id})
+	coleccion.remove({"id_padre":o_id})
 
 while True:
 	items={}
@@ -90,7 +93,7 @@ while True:
 		print "\t1) Sensor de temperatura"
 		print "\t2) Sensor de iluminacion"
 		print "\t3) AC"
-		print "\t4) Bombilla"
+		#print "\t4) Bombilla"
 		tip = int(input("Seleccione un tipo de objeto: "))
 		nom = str(raw_input("Ingrese el nombre del objeto: "))
 		conectaObjeto(tip, nom, ubi)

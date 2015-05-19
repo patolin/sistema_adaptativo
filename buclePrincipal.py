@@ -2,10 +2,13 @@ from time import time, sleep
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 import datetime
+import os
 
 items={}
 numItem=0
 
+def cls():
+    os.system(['clear','cls'][os.name == 'nt'])
 
 def creaUid(id):
 	return ObjectId(str(id))
@@ -124,6 +127,30 @@ def ejecutaSimulador(id):
 
 # bucle Monitoreo
 # verifica el estado de los sensores, y dispara alertas 
+def verificaSensores(id):
+	#verifica la existencia de sensores en la ubicacion, si no hay, apaga todos los AC y calefactores
+	client = MongoClient()
+	db=client.db_sua
+	coleccion = db.objetos
+	objetosBase=coleccion.find({"tipo":"lugar", "id_padre":id})
+	for lugar in objetosBase:
+
+		cuartos=coleccion.find({"tipo":"lugar", "id_padre":lugar["_id"]})
+		for cuarto in cuartos:
+			#contamos cuantos sensores hay en dicho cuarto
+			numSensores=coleccion.count({"tipo":"sensor", "id_padre":cuarto["_id"]})
+			#print "sensores encontrados: "+str(numSensores)
+			if (numSensores==0):
+				# creamos una alerta
+				print "Creando alerta para lugar id: "+str(cuarto["_id"])
+				alarma={	"timestamp":datetime.datetime.utcnow(),
+					"id_padre":cuarto["_id"],
+					"id_alerta":-1,
+					"atendida":0
+				}
+				coleccionAlertas=db.alertas
+				coleccionAlertas.insert(alarma)
+
 def disparaAlarma(idAlerta, idSensor):
 	print "**************************************"
 	print "Alarma disparada	: "+str(idAlerta)
@@ -151,6 +178,9 @@ def bucleMonitoreo(id):
 	client = MongoClient()
 	db=client.db_sua
 	coleccion = db.objetos
+	#monitoreamos la existencia de sensores
+	verificaSensores(0)
+
 	#obtenemos los datos del ambiente
 	datosAlarmas=coleccion.find({"tipo":"alarma"})
 	for alarma in datosAlarmas:
@@ -197,36 +227,55 @@ def bucleAnalisis(id):
 		uidAlerta=alerta["_id"]
 		uidSensor=alerta["id_padre"]
 		uidFuente=alerta["id_alerta"]
-		uidPadre=obtieneLugarSensor(uidSensor)
-		tipAlerta=obtieneTipoAlerta(uidFuente)
-		if (tipAlerta==1): #menor
-			accionEvento="apagar"
-		if (tipAlerta==2): #mayor
-			accionEvento="encender"
 
-		# obtenemos el lugar al que pertenece el sensor
-		# verificamos si tiene una unidad AC
-		coleccionObj = db.objetos
-		NumUnidadesAC=coleccionObj.count({"id_padre": uidPadre, "tipo":"actuador"})
-		#print "Unidades AC para el id: "+str(uidPadre)+" = "+str(NumUnidadesAC)
-		if (NumUnidadesAC>0):
-			unidadesAC=coleccionObj.find({"id_padre": uidPadre, "tipo":"actuador"})
+		if (uidFuente==-1):
+			# alerta de no sensores en la habitacion
+			print "No hay sensores en el lugar. Apagando todas las unidades AC disponibles"
+			coleccionObjetos=db.objetos
+			unidadesAC=coleccionObjetos.find({"tipo":"actuador", "id_padre":uidSensor})
 			for unidadAC in unidadesAC:
-				# encendemos cada unidad para que empiece a bajar la temperatura
-				client = MongoClient()
-				db=client.db_sua
 				coleccionAcciones = db.acciones
 				accionNueva={
 								"timestamp":datetime.datetime.utcnow(),
-								"accion": accionEvento, # encender/apagar
+								"accion": "apagar", # encender/apagar
 								"actuador": unidadAC["_id"],
 								"atendida": 0
 							}
-				print "Nueva accion generada"
 				coleccionAcciones.insert(accionNueva)
+			
+
 		else:
-			# al no tener AC, bajamos la iluminacion simulando el cierre de persianas
-			accionNueva= {}
+			# lectura normal de sensores
+			uidPadre=obtieneLugarSensor(uidSensor)
+			tipAlerta=obtieneTipoAlerta(uidFuente)
+			if (tipAlerta==1): #menor
+				accionEvento="apagar"
+			if (tipAlerta==2): #mayor
+				accionEvento="encender"
+
+			# obtenemos el lugar al que pertenece el sensor
+			# verificamos si tiene una unidad AC
+			coleccionObj = db.objetos
+			NumUnidadesAC=coleccionObj.count({"id_padre": uidPadre, "tipo":"actuador"})
+			#print "Unidades AC para el id: "+str(uidPadre)+" = "+str(NumUnidadesAC)
+			if (NumUnidadesAC>0):
+				unidadesAC=coleccionObj.find({"id_padre": uidPadre, "tipo":"actuador"})
+				for unidadAC in unidadesAC:
+					# encendemos cada unidad para que empiece a bajar la temperatura
+					client = MongoClient()
+					db=client.db_sua
+					coleccionAcciones = db.acciones
+					accionNueva={
+									"timestamp":datetime.datetime.utcnow(),
+									"accion": accionEvento, # encender/apagar
+									"actuador": unidadAC["_id"],
+									"atendida": 0
+								}
+					print "Nueva accion generada"
+					coleccionAcciones.insert(accionNueva)
+			else:
+				# al no tener AC, bajamos la iluminacion simulando el cierre de persianas
+				accionNueva= {}
 
 		#marcamos la alerta como atendida
 		alerta["atendida"]=1
@@ -263,6 +312,7 @@ def bucleEjecucion(id):
 # bucle principal del programa
 
 def bucle():
+	cls()
 	global items, numItem
 	print "*************************************"
 	print "Estado actual del sistema"
@@ -290,4 +340,4 @@ while True:
     startTime = time()
     bucle()
     endTime = time()-startTime
-    sleep(5.0-endTime)
+    sleep(2.5-endTime)
